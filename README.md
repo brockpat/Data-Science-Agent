@@ -186,18 +186,27 @@ The generated report includes:
 Example output file:
 
 ```text
-agent_benchmark_outputs/benchmark_results.md
+outputs/results.md
 ```
 
 ## Project Structure
 
 ```text
-Data_Science_Agent/
+Data-Science-Agent/
 ├── data/
 │   └── dataframe.csv
-├── agent_benchmark_outputs/
-│   └── benchmark_results.md
-└── data_science_agent.py
+├── outputs/
+│   └── results.md
+├── src/
+│   ├── agent.py
+│   ├── benchmark.py
+│   ├── code_executor.py
+│   ├── config.py
+│   ├── data_loader.py
+│   ├── prompts.py
+│   └── reporting.py
+├── main.py
+└── README.md
 ```
 
 ## How It Works
@@ -230,7 +239,7 @@ result
 
 ### 3. Initialize the agent
 
-The `LLMAgent` class wraps:
+The `DataScienceAgent` class wraps:
 
 - the dataframe state
 - the language model
@@ -245,7 +254,7 @@ The `LLMAgent` class wraps:
 Each call to:
 
 ```python
-llm.answer(question, question_id)
+agent.answer(question, question_id)
 ```
 
 returns a structured dictionary containing the final answer, generated code, output, retry metadata, and logs.
@@ -333,8 +342,10 @@ model = ChatOpenAI(
 Update the project paths:
 
 ```python
-base_path = Path("C:/Users/patri/Desktop/Data_Science_Agent/")
-data_path = base_path / "data" / "dataframe.csv"
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parent
+data_path = project_root / "data" / "dataframe.csv"
 ```
 
 Run the script.
