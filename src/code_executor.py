@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 from langchain.tools import tool
 
-
+# Patterns blacklisted to prevent malicious system access or imports
 FORBIDDEN_PATTERNS = [
     "import ",
     "from ",
@@ -25,7 +25,7 @@ FORBIDDEN_PATTERNS = [
     "sys.",
 ]
 
-
+# Whitelist of standard Python built-ins allowed in the constrained environment
 SAFE_BUILTINS = {
     "len": len,
     "range": range,
@@ -73,17 +73,18 @@ def make_python_analysis_tool(
 
         The code should assign the final answer to a variable called result.
         """
-
+        # Provide isolated deepcopy of df and standard data libraries to local execution scope
         local_env = {
             "df": df.copy(deep=True),
             "pd": pd,
             "np": np,
         }
-
+        # Restrict globals to the whitelist
         global_env = {
             "__builtins__": SAFE_BUILTINS
         }
 
+        # Reject code immediately if it contains forbidden substrings
         if any(pattern in code for pattern in FORBIDDEN_PATTERNS):
             return json.dumps(
                 {
@@ -99,13 +100,16 @@ def make_python_analysis_tool(
             )
 
         try:
+            # Capture standard output printed during execution
             stdout_buffer = StringIO()
 
+            # Execute the code safely
             with contextlib.redirect_stdout(stdout_buffer):
                 exec(code, global_env, local_env)
 
             stdout = stdout_buffer.getvalue()
 
+            # The agent is required to assign output to a variable named 'result'
             if "result" not in local_env:
                 return json.dumps(
                     {
@@ -118,14 +122,16 @@ def make_python_analysis_tool(
                 )
 
             result = local_env["result"]
-
+            
+            # Handle parsing and formatting of complex pandas objects
             if isinstance(result, pd.DataFrame):
                 formatted_result = result.to_string(index=False)
             elif isinstance(result, pd.Series):
                 formatted_result = result.to_string()
             else:
                 formatted_result = str(result)
-
+            
+            # Truncate strings that exceed token limits
             if len(formatted_result) > max_output_chars:
                 formatted_result = (
                     formatted_result[:max_output_chars]
@@ -141,6 +147,7 @@ def make_python_analysis_tool(
                 default=str,
             )
 
+        # Catch Python runtime exceptions and format nicely for the agent to debug
         except Exception as exc:
             return json.dumps(
                 {

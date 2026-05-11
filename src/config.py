@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 # ├── main.py
 # └── src/
 #     └── config.py
+
+# Calculates base directory structurally relative to this config file
 BASE_PATH = Path(__file__).resolve().parents[1]
 
 # Explicitly load .env from the project root
@@ -19,10 +21,12 @@ load_dotenv(dotenv_path=ENV_PATH)
 DATA_PATH = BASE_PATH / "data" / "dataframe.csv"
 
 OUTPUT_DIR = BASE_PATH / "outputs"
+# Ensure output directory exists
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 MARKDOWN_REPORT_PATH = OUTPUT_DIR / "results.md"
 
+# Fetch API key for LLM
 API_KEY = os.getenv("API_KEY")
 
 if not API_KEY:
@@ -32,6 +36,8 @@ if not API_KEY:
 
 OPENAI_MODEL = "gpt-5.4-mini"
 
+# Number of times the agent can retry code execution on failure
 MAX_CODE_ATTEMPTS = 3
 
+# Max characters returned from the code executor
 MAX_OUTPUT_CHARS = 12_000

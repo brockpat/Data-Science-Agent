@@ -13,6 +13,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 
 @dataclass
 class AgentState:
+    # Holds the dataset in memory to provide context to the agent
     dataset: pd.DataFrame
 
 
@@ -74,6 +75,7 @@ Dataframe dtypes:
         used_code = []
         tool_outputs = []
 
+        # Prepare the initial message payload with instructions and dataset context
         messages = [
             SystemMessage(content=self.system_instruction),
             HumanMessage(
@@ -85,7 +87,8 @@ Question:
 """
             ),
         ]
-
+        
+        # Get initial response from the model
         response = self.model_with_tools.invoke(messages)
         messages.append(response)
 
@@ -95,7 +98,9 @@ Question:
         parsed_tool_result = {}
         last_tool_failed = False
 
+        # Loop to handle tool calls and retries up to the configured limit
         while response.tool_calls and code_attempts < self.max_code_attempts:
+            # Enforce single tool call per turn constraint
             if len(response.tool_calls) > 1:
                 code_attempts += 1
 
@@ -117,7 +122,8 @@ Question:
             tool_name = tool_call["name"]
             tool_args = tool_call["args"]
             tool_call_id = tool_call["id"]
-
+            
+            # Validate requested tool
             if tool_name not in self.tool_map:
                 tool_result = json.dumps(
                     {
@@ -127,6 +133,7 @@ Question:
                     }
                 )
             else:
+                # Log code attempts if it's the python analysis tool
                 if tool_name == "run_python_analysis_code":
                     code_attempts += 1
 
@@ -183,6 +190,7 @@ Question:
                 )
             )
 
+            # If the tool failed, prompt the model to fix the bug
             if last_tool_failed and code_attempts < self.max_code_attempts:
                 messages.append(
                     HumanMessage(
@@ -198,6 +206,7 @@ Question:
                 response = self.model_with_tools.invoke(messages)
                 messages.append(response)
 
+            # If it succeeded, ask the base model (without tools) to formulate the final answer
             else:
                 response = self.base_model.invoke(messages)
                 messages.append(response)
